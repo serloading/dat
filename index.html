@@ -147,12 +147,19 @@ function catKey(c){return c==='\u004bad\u0131n Parf\u00fcmleri'?'k':c==='Erkek P
 function catShort(c){return c==='Kad\u0131n Parf\u00fcmleri'?'Kad\u0131n':c==='Erkek Parf\u00fcmleri'?'Erkek':c||'';}
 function saveFavs(){localStorage.setItem(FAV_KEY,JSON.stringify(Object.keys(favSet)));}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function priceHtml(d,cls){
+  if(!d.p) return '';
+  if(d.p0!=null && d.p0>d.p){
+    return '<div class="'+cls+'"><span style="text-decoration:line-through;color:var(--text3);font-weight:400;font-size:0.82em;margin-right:6px">'+d.p0.toLocaleString('tr-TR')+' \u20ba</span><span style="color:#b45309">'+d.p.toLocaleString('tr-TR')+' \u20ba</span></div>';
+  }
+  return '<div class="'+cls+'">'+d.p.toLocaleString('tr-TR')+' \u20ba</div>';
+}
 
 function cardHTML(d,idx){
   var ck=catKey(d.c),cs=catShort(d.c),isFav=!!favSet[d.n];
   var imgEl=d.i?('<img src="'+esc(d.i)+'" alt="'+esc(d.n)+'" loading="lazy" decoding="async">'):'<div class="no-img-ph">\u25c8</div>';
   var catEl=ck?('<span class="card-cat '+ck+'">'+cs+'</span>'):'';
-  var priceEl=d.p?('<div class="card-price">'+d.p.toLocaleString('tr-TR')+' \u20ba</div>'):'';
+  var priceEl=priceHtml(d,'card-price');
   return '<article class="card" onclick="openDetail('+idx+')">'
     +'<div class="card-img">'+imgEl
     +'<button class="fav-btn'+(isFav?' on':'')+'" data-n="'+esc(d.n)+'" onclick="event.stopPropagation();toggleFav(this)">'+(isFav?'\u2713':'+')+'</button>'
@@ -333,7 +340,7 @@ function openDetail(idx){
   var ck=catKey(d.c),cs=catShort(d.c),isFav=!!favSet[d.n];
   var imgEl=d.i?('<img src="'+esc(d.i)+'" alt="'+esc(d.n)+'" loading="lazy">'):'<div class="detail-img-ph">\u25c8</div>';
   var catEl=ck?('<span class="detail-cat '+ck+'">'+cs+'</span>'):'';
-  var priceEl=d.p?('<div class="detail-price">'+d.p.toLocaleString('tr-TR')+' \u20ba</div>'):'';
+  var priceEl=priceHtml(d,'detail-price');
   var descEl=d.desc?('<div class="detail-desc">'+esc(d.desc)+'</div>'):'';
   var notesEl='';
   if(d.top||d.mid||d.base){
@@ -408,7 +415,7 @@ applyFilter();
       }
       if(j.campaign&&j.campaign.active&&j.campaign.pct>0){
         var f=1-(j.campaign.pct/100);
-        for(var k=0;k<DATA.length;k++){ DATA[k].p=Math.round(DATA[k].p*f); }
+        for(var k=0;k<DATA.length;k++){ DATA[k].p0=DATA[k].p; DATA[k].p=Math.round(DATA[k].p*f); }
         changed=true;
       }
       if(changed) applyFilter();
