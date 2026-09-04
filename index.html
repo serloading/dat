@@ -369,6 +369,28 @@ function closeDetail(){
 updateFavCount();
 applyFilter();
 (function(){
+  // Sitede kapatılan/silinen ürünleri bu statik katalogdan otomatik gizler.
+  // Ağ isteği başarısız olursa (offline, timeout) hiçbir şey gizlenmez —
+  // katalog her zaman çalışır durumda kalır.
+  var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+  var t=ctrl?setTimeout(function(){ctrl.abort();},4000):null;
+  fetch('https://ormivo.com/api/public/pasif-urunler',{signal:ctrl?ctrl.signal:undefined})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(j){
+      if(t) clearTimeout(t);
+      if(!j||!j.closed||!j.closed.length) return;
+      var closed={};
+      for(var i=0;i<j.closed.length;i++) closed[j.closed[i]]=true;
+      var before=DATA.length;
+      DATA=DATA.filter(function(d){
+        var path=d.i.replace('https://ormivo.com','');
+        return !closed[path];
+      });
+      if(DATA.length!==before) applyFilter();
+    })
+    .catch(function(){ if(t) clearTimeout(t); });
+})();
+(function(){
   var ua=navigator.userAgent||'';
   if(/TikTok|musical_ly|BytedanceWebview|Instagram|FBAN|FBAV|Line\//i.test(ua)){
     var b=document.getElementById('iab-banner'); if(b) b.style.display='block';
