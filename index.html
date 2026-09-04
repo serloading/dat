@@ -391,6 +391,24 @@ applyFilter();
     .catch(function(){ if(t) clearTimeout(t); });
 })();
 (function(){
+  // Bayinin kendi belirlediği satış fiyatları varsa gömülü fiyatların üzerine uygular.
+  var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+  var t=ctrl?setTimeout(function(){ctrl.abort();},4000):null;
+  fetch('https://ormivo.com/api/public/bayi-fiyat/dat',{signal:ctrl?ctrl.signal:undefined})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(j){
+      if(t) clearTimeout(t);
+      if(!j||!j.prices) return;
+      var prices=j.prices,changed=false;
+      for(var i=0;i<DATA.length;i++){
+        var path=DATA[i].i.replace('https://ormivo.com','');
+        if(prices[path]!=null && DATA[i].p!==prices[path]){ DATA[i].p=prices[path]; changed=true; }
+      }
+      if(changed) applyFilter();
+    })
+    .catch(function(){ if(t) clearTimeout(t); });
+})();
+(function(){
   var ua=navigator.userAgent||'';
   if(/TikTok|musical_ly|BytedanceWebview|Instagram|FBAN|FBAV|Line\//i.test(ua)){
     var b=document.getElementById('iab-banner'); if(b) b.style.display='block';
