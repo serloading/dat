@@ -315,6 +315,7 @@ function copyToClipboard(text){
 function shareWA(e){
   var fd=[];for(var i=0;i<DATA.length;i++) if(favSet[DATA[i].n]) fd.push(DATA[i]);
   if(!fd.length){ e.preventDefault(); return; }
+  try{ fetch('https://ormivo.com/api/public/bayi-tiklama/dat',{method:'POST',keepalive:true}).catch(function(){}); }catch(err){}
   var lines=['Merhaba, sepetimdeki \u00fcr\u00fcnleri sipari\u015f etmek istiyorum:',''];
   for(var i=0;i<fd.length;i++) lines.push((i+1)+'. '+fd[i].n+' - '+fd[i].b+(fd[i].p?' ('+fd[i].p.toLocaleString('tr-TR')+' \u20ba)':''));
   var msg=lines.join('\n');
@@ -391,18 +392,24 @@ applyFilter();
     .catch(function(){ if(t) clearTimeout(t); });
 })();
 (function(){
-  // Bayinin kendi belirlediği satış fiyatları varsa gömülü fiyatların üzerine uygular.
+  // Bayinin kendi belirlediği satış fiyatları ve aktifse kampanya indirimi
+  // gömülü fiyatların üzerine uygulanır.
   var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
   var t=ctrl?setTimeout(function(){ctrl.abort();},4000):null;
   fetch('https://ormivo.com/api/public/bayi-fiyat/dat',{signal:ctrl?ctrl.signal:undefined})
     .then(function(r){return r.ok?r.json():null;})
     .then(function(j){
       if(t) clearTimeout(t);
-      if(!j||!j.prices) return;
-      var prices=j.prices,changed=false;
+      if(!j) return;
+      var prices=j.prices||{},changed=false;
       for(var i=0;i<DATA.length;i++){
         var path=DATA[i].i.replace('https://ormivo.com','');
         if(prices[path]!=null && DATA[i].p!==prices[path]){ DATA[i].p=prices[path]; changed=true; }
+      }
+      if(j.campaign&&j.campaign.active&&j.campaign.pct>0){
+        var f=1-(j.campaign.pct/100);
+        for(var k=0;k<DATA.length;k++){ DATA[k].p=Math.round(DATA[k].p*f); }
+        changed=true;
       }
       if(changed) applyFilter();
     })
